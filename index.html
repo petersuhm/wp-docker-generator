@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <title>Docker for WordPress generator</title>
+</head>
+<body>
+
+<div id="app">
+    <label>Site name: <input v-model="site_name"></label><br>
+    <label>DB port (host): <input v-model="db_host_port"></label><br>
+    <label>Web port (host): <input v-model="web_host_port"></label><br>
+    <input v-model="package_type" type="radio" name="package_type" value="plugin" id="package-type-plugin" checked>
+    <label for="package-type-plugin">Plugin</label>
+    <input v-model="package_type" type="radio" name="package_type" value="theme" id="package-type-theme">
+    <label for="package-type-theme">Theme</label><br>
+    <label>{{ package_type == 'plugin' ? 'Plugin' : 'Theme' }} name: <input v-model="package_dir_name"></label><br>
+
+    <hr>
+
+    <div>
+        <pre>version: '3'
+
+services:
+  db:
+    image: mariadb
+    volumes:
+      - {{ site_name | slugify }}_db_data:/var/lib/mysql
+    ports:
+      - "{{ db_host_port }}:3600"
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: wordpress
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+  wordpress:
+    depends_on:
+      - db
+    image: wordpress
+    volumes:
+      - .:/var/www/html/wp-content/{{ package_type == 'plugin' ? 'plugins' : 'themes' }}/{{ package_dir_name }}/
+      - {{ site_name | slugify }}_wp_core_files:/var/www/html
+    ports:
+      - "{{ web_host_port }}:80"
+    restart: always
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_PASSWORD: wordpress
+  cli:
+    image: wordpress:cli
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html/wp-content/plugins/example-plugin/
+      - {{ site_name | slugify }}_wp_core_files:/var/www/html
+volumes:
+  {{ site_name | slugify }}_db_data:
+  {{ site_name | slugify }}_wp_core_files:
+        </pre>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
